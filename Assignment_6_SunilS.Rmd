@@ -1,0 +1,71 @@
+---
+title: "Assignment6_SunilS"
+author: "Sunil S"
+date: "17 September 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls(all=T))
+```
+## Read the file and pre-process
+```{r, include=FALSE,echo=T}
+setwd("E:\\INSOFE_CPEE\\Wk6\\09092017_Day1\\201700909_Batch32_BLR_CSE7302c_LogReg_NaiveBayesLAB\\201700909_Batch_32_BLR_CSE7302c_LogReg")
+
+data = read.csv("parkinsons_data.csv")
+summary(data)
+str(data)
+
+data$status = as.factor(as.character(data$status)) # converting categorical to factor
+
+sum(is.na(data))  #no NA in the data.
+
+```
+## Split data as Train and Test, maintaining same proportion
+
+```{r echo = TRUE, include = FALSE}
+library(caret)
+set.seed(123)
+row = createDataPartition(data$status,p = 0.7,list = FALSE)
+row
+train = data[row,]
+test = data[-row,]
+
+str(train)
+```
+## Building model
+```{r echo = TRUE, include = FALSE}
+log_reg = glm(formula = train$status~.,family = "binomial", data = train)
+summary(log_reg)
+```
+## Pridiction
+```{r echo =TRUE}
+pr = predict(log_reg,train,train = 'response')
+library(ROCR) # we need threshold, so required to use Area under the curve
+
+p = prediction(pr,train$status)
+perf = performance(p,measure ="tpr", x.measure = "fpr")
+plot(perf)
+
+pred_test = ifelse(pr >0.1, "yes","no")
+
+```
+##confusion matrix
+```{r}
+data1 = train$status
+summary(data1)
+summary(pred_test)
+conf_matrix = table(data1,pred_test) 
+print(conf_matrix)
+```
+```{r echo =TRUE}
+TP = 96
+TN = 29
+FP = 5
+FN = 7
+
+specificity = TN/FP+TN #34.8
+Recall = TP/TP+FN  #8
+Accuracy = (TP+TN)/(TP+TN+FP+FN) #0.9124 i.e 91.24%
+# As it is important to recognise correctly people not having Parkinson's as not having and people having Parkinson's as haing parkinsons, in this case it becomes essential to look at Accuracy. This value is 91.24%, hence model can be considered as good
+```
